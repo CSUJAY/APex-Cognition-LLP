@@ -1,6 +1,11 @@
+import { Suspense, lazy } from 'react'
 import { ScrollReveal } from './ScrollReveal'
 import { TiltCard } from './TiltCard'
-import { CyberAIMini3D, type CyberAIVariant } from './CyberAIMini3D'
+import type { CyberAIVariant } from './CyberAIMini3D'
+
+const CyberAIMini3D = lazy(() =>
+  import('./CyberAIMini3D').then((m) => ({ default: m.CyberAIMini3D })),
+)
 
 const items: { title: string; detail: string; variant: CyberAIVariant }[] = [
   {
@@ -42,7 +47,16 @@ export function CyberAIDesign() {
             <ScrollReveal key={item.title} delay={i * 0.08}>
               <TiltCard className="h-full" intensity={14}>
                 <article className="glass-panel h-full overflow-hidden rounded-2xl">
-                  <CyberAIMini3D variant={item.variant} className="border-x-0 border-t-0 border-b border-white/10" />
+                  <Suspense
+                    fallback={
+                      <div className="h-44 w-full animate-pulse rounded-xl border-x-0 border-t-0 border-b border-white/10 bg-linear-to-br from-white/5 to-transparent" />
+                    }
+                  >
+                    <CyberAIMini3D
+                      variant={item.variant}
+                      className="border-x-0 border-t-0 border-b border-white/10"
+                    />
+                  </Suspense>
                   <div className="p-7">
                     <h3 className="font-display text-xl font-semibold text-white">
                       {item.title}

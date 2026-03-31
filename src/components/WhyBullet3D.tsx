@@ -1,6 +1,7 @@
 import { useRef, Suspense } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
+import { useInViewMount } from '../hooks/useInViewMount'
 
 type Shape = 'cube' | 'pyramid' | 'octa' | 'tetra'
 
@@ -36,6 +37,7 @@ function PulseMesh({ shape }: { shape: Shape }) {
 function Scene({ shape }: { shape: Shape }) {
   return (
     <>
+      <color attach="background" args={['#030712']} />
       <ambientLight intensity={0.55} />
       <pointLight position={[2, 2, 3]} intensity={1.4} color="#22d3ee" />
       <pointLight position={[-2, -1, -1]} intensity={0.7} color="#d946ef" />
@@ -48,18 +50,26 @@ const shapeCycle: Shape[] = ['cube', 'pyramid', 'octa', 'tetra']
 
 export function WhyBullet3D({ index }: { index: number }) {
   const shape = shapeCycle[index % shapeCycle.length]
+  const { ref, active } = useInViewMount({ rootMargin: '50px', hideDelayMs: 1200 })
 
   return (
-    <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-cyan-500/25 bg-apex-deep/90">
-      <Canvas
-        camera={{ position: [0, 0, 1.65], fov: 42 }}
-        dpr={[1, 1.25]}
-        gl={{ antialias: true, alpha: true, powerPreference: 'low-power' }}
-      >
-        <Suspense fallback={null}>
-          <Scene shape={shape} />
-        </Suspense>
-      </Canvas>
+    <div
+      ref={ref}
+      className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-cyan-500/25 bg-[#030712]"
+    >
+      {active ? (
+        <Canvas
+          camera={{ position: [0, 0, 1.65], fov: 42 }}
+          dpr={[1, 1.15]}
+          gl={{ antialias: true, alpha: false, powerPreference: 'low-power', stencil: false }}
+        >
+          <Suspense fallback={null}>
+            <Scene shape={shape} />
+          </Suspense>
+        </Canvas>
+      ) : (
+        <div className="absolute inset-0 bg-linear-to-br from-cyan-500/20 to-fuchsia-600/10" aria-hidden />
+      )}
     </div>
   )
 }

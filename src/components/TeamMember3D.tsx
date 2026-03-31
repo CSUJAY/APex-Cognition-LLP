@@ -2,8 +2,33 @@ import { Suspense, useRef } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
 import { Edges, Float } from '@react-three/drei'
 import * as THREE from 'three'
+import { useIsMobile } from '../hooks/useIsMobile'
+import { useInViewMount } from '../hooks/useInViewMount'
+import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion'
 
 export type Team3DVariant = 'core' | 'flow'
+
+function TeamMiniStatic({ variant }: { variant: Team3DVariant }) {
+  return (
+    <div
+      className={`absolute inset-0 bg-linear-to-br ${
+        variant === 'core' ? 'from-cyan-500/25' : 'from-fuchsia-500/25'
+      } to-apex-void`}
+      aria-hidden
+    >
+      <div className="apex-grid absolute inset-0 opacity-40" />
+      <div className="absolute inset-0 flex items-center justify-center">
+        <div
+          className={
+            variant === 'core'
+              ? 'h-7 w-7 rotate-45 border border-cyan-400/40 bg-cyan-500/20'
+              : 'h-8 w-8 rounded-full border-2 border-fuchsia-400/35'
+          }
+        />
+      </div>
+    </div>
+  )
+}
 
 function CoreMark() {
   const g = useRef<THREE.Group>(null)
@@ -77,21 +102,32 @@ export function TeamMember3D({
   /** Small square preview for compact team row */
   compact?: boolean
 }) {
+  const isMobile = useIsMobile()
+  const reducedMotion = usePrefersReducedMotion()
+  const { ref, active } = useInViewMount({ rootMargin: '60px', hideDelayMs: 900 })
+
+  const useStatic = isMobile || reducedMotion
+  const showCanvas = !useStatic && active
+
   const box = compact
-    ? 'relative h-[4.5rem] w-[4.5rem] overflow-hidden rounded-lg border border-white/10 bg-apex-deep/80 sm:h-20 sm:w-20'
-    : 'relative h-36 w-full overflow-hidden rounded-xl border border-white/10 bg-apex-deep/80'
+    ? 'relative h-[4.5rem] w-[4.5rem] overflow-hidden rounded-lg border border-white/10 bg-[#030712] sm:h-20 sm:w-20'
+    : 'relative h-36 w-full overflow-hidden rounded-xl border border-white/10 bg-[#030712]'
 
   return (
-    <div className={`${box} ${className}`}>
-      <Canvas
-        camera={{ position: [0, 0, compact ? 2.75 : 3.2], fov: compact ? 40 : 42 }}
-        dpr={[1, 1.5]}
-        gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
-      >
-        <Suspense fallback={null}>
-          <Scene variant={variant} />
-        </Suspense>
-      </Canvas>
+    <div ref={ref} className={`${box} ${className}`}>
+      {showCanvas ? (
+        <Canvas
+          camera={{ position: [0, 0, compact ? 2.75 : 3.2], fov: compact ? 40 : 42 }}
+          dpr={[1, Math.min(1.35, typeof window !== 'undefined' ? window.devicePixelRatio : 1)]}
+          gl={{ antialias: true, alpha: false, powerPreference: 'high-performance', stencil: false }}
+        >
+          <Suspense fallback={null}>
+            <Scene variant={variant} />
+          </Suspense>
+        </Canvas>
+      ) : (
+        <TeamMiniStatic variant={variant} />
+      )}
     </div>
   )
 }

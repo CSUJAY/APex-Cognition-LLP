@@ -2,8 +2,29 @@ import { useRef, useState, Suspense } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
 import { Edges } from '@react-three/drei'
 import * as THREE from 'three'
+import { useIsMobile } from '../hooks/useIsMobile'
+import { useInViewMount } from '../hooks/useInViewMount'
+import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion'
 
 export type ProjectVariant = 'webgl' | 'dashboard' | 'saas'
+
+function ProjectMiniStatic({ variant }: { variant: ProjectVariant }) {
+  const grad =
+    variant === 'webgl'
+      ? 'from-cyan-500/25 via-violet-600/10 to-apex-void'
+      : variant === 'dashboard'
+        ? 'from-cyan-500/15 via-slate-800/30 to-apex-void'
+        : 'from-fuchsia-500/20 via-cyan-500/10 to-apex-void'
+  return (
+    <div
+      className={`absolute inset-0 bg-linear-to-br ${grad} motion-safe:animate-[pulse_5s_ease-in-out_infinite]`}
+      aria-hidden
+    >
+      <div className="apex-grid absolute inset-0 opacity-30" />
+      <div className="absolute left-1/2 top-1/2 h-20 w-20 -translate-x-1/2 -translate-y-1/2 rounded-full bg-cyan-400/15 blur-2xl" />
+    </div>
+  )
+}
 
 function MiniModel({
   variant,
@@ -116,26 +137,37 @@ export function ProjectMini3D({
   className?: string
 }) {
   const [hover, setHover] = useState(false)
+  const isMobile = useIsMobile()
+  const reducedMotion = usePrefersReducedMotion()
+  const { ref, active } = useInViewMount({ rootMargin: '80px', hideDelayMs: 800 })
+
+  const useStatic = isMobile || reducedMotion
+  const showCanvas = !useStatic && active
 
   return (
     <div
-      className={`relative h-44 w-full overflow-hidden rounded-xl border border-white/10 bg-apex-deep/80 ${className}`}
+      ref={ref}
+      className={`relative h-44 w-full overflow-hidden rounded-xl border border-white/10 bg-[#030712] ${className}`}
       onPointerEnter={() => setHover(true)}
       onPointerLeave={() => setHover(false)}
       role="presentation"
     >
-      <Canvas
-        camera={{ position: [0, 0, 2.8], fov: 45 }}
-        dpr={[1, 1.5]}
-        gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
-      >
-        <Suspense fallback={null}>
-          <Scene variant={variant} hover={hover} />
-        </Suspense>
-      </Canvas>
+      {showCanvas ? (
+        <Canvas
+          camera={{ position: [0, 0, 2.8], fov: 45 }}
+          dpr={[1, Math.min(1.35, typeof window !== 'undefined' ? window.devicePixelRatio : 1)]}
+          gl={{ antialias: true, alpha: false, powerPreference: 'high-performance', stencil: false }}
+        >
+          <Suspense fallback={null}>
+            <Scene variant={variant} hover={hover} />
+          </Suspense>
+        </Canvas>
+      ) : (
+        <ProjectMiniStatic variant={variant} />
+      )}
       <div
         className={`pointer-events-none absolute inset-0 rounded-xl transition ${
-          hover ? 'shadow-[inset_0_0_0_1px_rgba(34,211,238,0.45)]' : ''
+          hover && showCanvas ? 'shadow-[inset_0_0_0_1px_rgba(34,211,238,0.45)]' : ''
         }`}
       />
     </div>

@@ -3,6 +3,7 @@ import { Canvas, useFrame } from '@react-three/fiber'
 import { MeshDistortMaterial } from '@react-three/drei'
 import { EffectComposer, Bloom, Noise, Vignette } from '@react-three/postprocessing'
 import * as THREE from 'three'
+import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion'
 
 function WriggleTube({
   colorA,
@@ -89,7 +90,7 @@ function WriggleTube({
   )
 }
 
-function Scene() {
+function Scene({ postFX }: { postFX: boolean }) {
   return (
     <>
       <color attach="background" args={['#030712']} />
@@ -134,26 +135,35 @@ function Scene() {
         />
       </group>
 
-      <EffectComposer multisampling={0}>
-        <Bloom intensity={1.1} luminanceThreshold={0.12} luminanceSmoothing={0.92} mipmapBlur />
-        <Vignette eskil={false} offset={0.12} darkness={0.6} />
-        <Noise opacity={0.03} />
-      </EffectComposer>
+      {postFX && (
+        <EffectComposer multisampling={0}>
+          <Bloom intensity={1.1} luminanceThreshold={0.12} luminanceSmoothing={0.92} mipmapBlur />
+          <Vignette eskil={false} offset={0.12} darkness={0.6} />
+          <Noise opacity={0.03} />
+        </EffectComposer>
+      )}
     </>
   )
 }
 
 export function WriggleScene({ className = '' }: { className?: string }) {
+  const reducedMotion = usePrefersReducedMotion()
+
   return (
     <div className={`relative h-full w-full ${className}`}>
       <Canvas
         camera={{ position: [0, 0.2, 7.2], fov: 44 }}
-        dpr={[1, Math.min(1.75, typeof window !== 'undefined' ? window.devicePixelRatio : 1)]}
-        gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
+        dpr={[1, Math.min(1.35, typeof window !== 'undefined' ? window.devicePixelRatio : 1)]}
+        gl={{
+          antialias: !reducedMotion,
+          alpha: true,
+          powerPreference: 'high-performance',
+          stencil: false,
+        }}
         style={{ background: 'transparent' }}
       >
         <Suspense fallback={null}>
-          <Scene />
+          <Scene postFX={!reducedMotion} />
         </Suspense>
       </Canvas>
     </div>

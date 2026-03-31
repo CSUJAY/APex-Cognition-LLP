@@ -2,6 +2,7 @@ import { useRef, useMemo, Suspense } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
 import { Line, Sparkles } from '@react-three/drei'
 import * as THREE from 'three'
+import { useInViewMount } from '../hooks/useInViewMount'
 
 function DataFlow({ reduced }: { reduced: boolean }) {
   const ref = useRef<THREE.Group>(null)
@@ -138,17 +139,33 @@ export function MeetingBuddyScene({
   reduced?: boolean
   className?: string
 }) {
+  const { ref, active } = useInViewMount({ rootMargin: '100px', hideDelayMs: 1000 })
+
   return (
-    <div className={`relative h-full min-h-[280px] w-full ${className}`}>
-      <Canvas
-        camera={{ position: [0, 0.2, 4.8], fov: 42 }}
-        dpr={reduced ? [1, 1.2] : [1, 1.5]}
-        gl={{ antialias: !reduced, alpha: true, powerPreference: 'high-performance' }}
-      >
-        <Suspense fallback={null}>
-          <Scene reduced={reduced} />
-        </Suspense>
-      </Canvas>
+    <div ref={ref} className={`relative h-full min-h-[280px] w-full ${className}`}>
+      {active ? (
+        <Canvas
+          camera={{ position: [0, 0.2, 4.8], fov: 42 }}
+          dpr={reduced ? [1, 1.15] : [1, Math.min(1.35, typeof window !== 'undefined' ? window.devicePixelRatio : 1)]}
+          gl={{
+            antialias: !reduced,
+            alpha: false,
+            powerPreference: 'high-performance',
+            stencil: false,
+          }}
+        >
+          <Suspense fallback={null}>
+            <Scene reduced={reduced} />
+          </Suspense>
+        </Canvas>
+      ) : (
+        <div
+          className="absolute inset-0 flex items-center justify-center rounded-3xl bg-apex-void [background-image:radial-gradient(ellipse_at_center,rgba(34,211,238,0.12),transparent_65%)]"
+          aria-hidden
+        >
+          <p className="text-sm text-zinc-600">Scroll for visualization</p>
+        </div>
+      )}
     </div>
   )
 }
